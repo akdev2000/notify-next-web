@@ -1,7 +1,7 @@
+import { OriginalNotificationType } from "@/pages/notification";
 import { Grid, Paper, Typography } from "@mui/material";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
-import { OriginalNotificationType } from "../pages/Notifications";
 import { NotificatonProps } from "./NotificationList";
 
 export default function NotificationContent(props: {

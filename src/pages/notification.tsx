@@ -1,4 +1,10 @@
-import { gql, useMutation, useQuery, useSubscription } from "@apollo/client";
+import {
+  gql,
+  useLazyQuery,
+  useMutation,
+  useQuery,
+  useSubscription,
+} from "@apollo/client";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -77,17 +83,10 @@ export default function Notifications() {
   const [selectedNotification, setSelectedNotification] = useState<any>();
   const sessionLogoutListener = useSubscription(SESSION_LOG_OUT_LISTENER);
   const [logoutDevice, logoutDeviceResponse] = useMutation(LOGOUT);
-  const getAllNotifications = useQuery<
+  const [fetchNotification, getAllNotifications] = useLazyQuery<
     NotificationOutputType,
     NotificationInputType
-  >(GET_NOTIFICATOINS, {
-    variables: {
-      input: {
-        session_id: getSessionId(),
-        device_id: getDeviceId(),
-      },
-    },
-  });
+  >(GET_NOTIFICATOINS);
   const notificationListener = useSubscription(NOTIFICATION_RECEIVED_LISTENER);
   const router = useRouter();
 
@@ -98,8 +97,21 @@ export default function Notifications() {
       }
     }
   `);
+
   useEffect(() => {
-    if (getAllNotifications.data) {
+    (async () => {
+      await fetchNotification({
+        variables: {
+          input: {
+            session_id: getSessionId(),
+            device_id: getDeviceId(),
+          },
+        },
+      });
+    })();
+  }, []);
+  useEffect(() => {
+    if (getAllNotifications?.data) {
       if (getAllNotifications.data?.getNotificationByID?.length > 0) {
         setSelectedNotification(
           getAllNotifications?.data?.getNotificationByID[0]
@@ -107,16 +119,16 @@ export default function Notifications() {
       }
       console.log("getAllNotifications.data : ", getAllNotifications.data);
     }
-  }, [getAllNotifications.data]);
+  }, [getAllNotifications?.data]);
 
   useEffect(() => {
-    if (getAllNotifications.error) {
-      if (getAllNotifications.error?.message == SESSION_EXPIRED) {
+    if (getAllNotifications?.error) {
+      if (getAllNotifications?.error?.message == SESSION_EXPIRED) {
         clearLocalStorage();
         router.push("/");
       }
     }
-  }, [getAllNotifications.error]);
+  }, [getAllNotifications?.error]);
 
   useEffect(() => {
     console.log("sessionLogoutListener?.data", sessionLogoutListener?.data);
@@ -145,7 +157,7 @@ export default function Notifications() {
 
   useEffect(() => {
     if (notificationListener?.data) {
-      getAllNotifications.refetch()
+      getAllNotifications?.refetch();
     }
   }, [notificationListener?.data]);
 
@@ -170,7 +182,8 @@ export default function Notifications() {
           alignItems: "center",
           flexDirection: "column",
           justifyContent: "flex-start",
-          height: window.innerHeight,
+          // height: window.innerHeight,
+          height:"100vh",
           overflow: "scroll",
           overflowX: "hidden",
         }}
@@ -226,21 +239,24 @@ export default function Notifications() {
             </Button>
           </div>
         </Paper>
-        {getAllNotifications?.data?.getNotificationByID?.map((notification) => {
-          return (
-            <NotificationList
-              title={notification?.title}
-              description={notification?.mainTitle}
-              notification={notification?.notificationData}
-              selected={notification.id == selectedNotification?.id}
-              onClick={() => {
-                console.log("Notificatiom: ", notification);
-                setSelectedNotification(notification);
-              }}
-              createdAt={notification.createdAt}
-            />
-          );
-        })}
+        {getAllNotifications?.data?.getNotificationByID?.map(
+          (notification, notificationKey) => {
+            return (
+              <NotificationList
+                title={notification?.title}
+                description={notification?.mainTitle}
+                notification={notification?.notificationData}
+                selected={notification.id == selectedNotification?.id}
+                onClick={() => {
+                  console.log("Notificatiom: ", notification);
+                  setSelectedNotification(notification);
+                }}
+                createdAt={notification.createdAt}
+                key={notificationKey}
+              />
+            );
+          }
+        )}
       </Grid>
       <Grid alignItems={"center"} item xs={9}>
         <NotificationContent
