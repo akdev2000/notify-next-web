@@ -2,8 +2,7 @@ import {
   gql,
   useLazyQuery,
   useMutation,
-  useQuery,
-  useSubscription,
+  useSubscription
 } from "@apollo/client";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import { useRouter } from "next/router";
@@ -57,7 +56,7 @@ const NOTIFICATION_RECEIVED_LISTENER = gql`
   }
 `;
 
-type NotificationOutputType = {
+export type NotificationOutputType = {
   getNotificationByID: OriginalNotificationType[];
 };
 
@@ -72,7 +71,7 @@ export type OriginalNotificationType = {
   createdAt?: Date;
   updatedAt?: Date;
 };
-type NotificationInputType = {
+export type NotificationInputType = {
   input: {
     device_id: string;
     session_id: string;
@@ -90,13 +89,6 @@ export default function Notifications() {
   const notificationListener = useSubscription(NOTIFICATION_RECEIVED_LISTENER);
   const router = useRouter();
 
-  const test = useQuery(gql`
-    {
-      test {
-        id
-      }
-    }
-  `);
 
   useEffect(() => {
     (async () => {
@@ -107,6 +99,8 @@ export default function Notifications() {
             device_id: getDeviceId(),
           },
         },
+      }).catch((err) => {
+        console.log("Fetch Notification Erro : " , err);
       });
     })();
   }, []);
